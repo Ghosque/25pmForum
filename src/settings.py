@@ -4,7 +4,7 @@ import os
 
 class BaseConfig:
     # MySQL
-    HOST = '47.107.183.166'
+    HOST = 'localhost'
     PORT = '3306'
     DATABASE = 'forum'
     USERNAME = 'root'
@@ -12,6 +12,10 @@ class BaseConfig:
     SQLALCHEMY_DATABASE_URI = "mysql+pymysql://{username}:{password}@{host}:{port}/{db}?charset=utf8".format(username=USERNAME, password=PASSWORD, host=HOST, port=PORT, db=DATABASE)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # Redis
+    REDIS_HOST = 'localhost'
+    REDIS_PORT = '6379'
+    REDIS_DB = '6'
+    REDIS_DEFAULT_EXPIRE = 100 * 365 * 24 * 60 * 60
 
 
 class DevelopConfig(BaseConfig):

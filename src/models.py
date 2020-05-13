@@ -17,6 +17,10 @@ class User(db.Model, Base):
     phone = db.Column(db.String(20), unique=True, nullable=False)
     avatar = db.Column(db.String(255), nullable=True)
 
+    @classmethod
+    def save_data(cls):
+        pass
+
 
 class PostType(db.Model, Base):
     __tablename__ = 'post_type'

@@ -4,3 +4,4 @@ flask-restful==0.3.8
 flask-sqlalchemy==2.4.1
 pymysql==0.9.3
 flask-script==2.0.6
+redis==3.5.1
