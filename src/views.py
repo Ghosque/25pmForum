@@ -7,10 +7,10 @@ from .utils import Redis
 cache = Redis.get_cache()
 
 
-@api.resource('/user/')
+@api.resource('/user/', '/user/<string:user_id>/')
 class User(Resource):
-    def get(self):
-        pass
+    def get(self, user_id):
+        return make_response(jsonify({'msg': 'select user - {}'.format(user_id)}), 200)
 
     def post(self):
         type = request.args.get('type')
