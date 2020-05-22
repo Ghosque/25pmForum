@@ -1,7 +1,6 @@
 # -*- coding:utf-8 -*-
 import jwt
 import hashlib
-from jwt import PyJWT
 from datetime import datetime, timedelta
 
 from flask import request, jsonify, make_response
@@ -20,6 +19,11 @@ class UserView(Resource):
     USER_CACHE_KEY_MODEL = 'user:token:{}'
 
     def get(self, user_id):
+        token = request.headers.get('Authorization', None)
+        user = User.get_user(user_id)
+        if user:
+            print(user.username)
+            print(user.posts)
         response = make_response(jsonify({'msg': 'select user - {}'.format(user_id)}), 200)
         return response
 

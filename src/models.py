@@ -20,6 +20,12 @@ class User(db.Model, Base):
     avatar = db.Column(db.String(255), nullable=True)
 
     @classmethod
+    def get_user(cls, user_id):
+        user = cls.query.filter_by(id=user_id).first()
+
+        return user
+
+    @classmethod
     def save_data(cls, data):
         user = cls.query.filter_by(username=data['username'], phone=data['phone']).first()
 
