@@ -16,7 +16,8 @@ class BaseConfig:
     REDIS_HOST = 'localhost'
     REDIS_PORT = '6379'
     REDIS_DB = '6'
-    REDIS_DEFAULT_EXPIRE = 100 * 365 * 24 * 60 * 60
+    REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
+    REDIS_DEFAULT_EXPIRE = 7 * 24 * 60 * 60
 
 
 class DevelopConfig(BaseConfig):

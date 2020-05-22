@@ -1,8 +1,6 @@
 # -*- coding:utf-8 -*-
 import datetime
 
-from sqlalchemy.exc import InvalidRequestError
-
 from src import db
 
 
@@ -23,7 +21,7 @@ class User(db.Model, Base):
 
     @classmethod
     def save_data(cls, data):
-        user = db.session.query(cls).filter_by(username=data['username'], phone=data['phone']).first()
+        user = cls.query.filter_by(username=data['username'], phone=data['phone']).first()
 
         if user:
             return None
@@ -32,6 +30,13 @@ class User(db.Model, Base):
             db.session.add(user)
             db.session.commit()
             return user
+
+    @classmethod
+    def verify_data(cls, data):
+        user = cls.query.filter_by(username=data['username'], password=data['password']).first()
+
+        return user
+
 
 class PostType(db.Model, Base):
     __tablename__ = 'post_type'
