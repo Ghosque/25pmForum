@@ -3,6 +3,7 @@ import os
 
 
 class BaseConfig:
+    SECRET_KEY = 'ashdoihsf819y3hr893h43'
     # MySQL
     HOST = 'localhost'
     PORT = '3306'

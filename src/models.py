@@ -1,5 +1,8 @@
 # -*- coding:utf-8 -*-
 import datetime
+
+from sqlalchemy.exc import InvalidRequestError
+
 from src import db
 
 
@@ -14,13 +17,21 @@ class User(db.Model, Base):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     username = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(50), nullable=False)
     phone = db.Column(db.String(20), unique=True, nullable=False)
     avatar = db.Column(db.String(255), nullable=True)
 
     @classmethod
-    def save_data(cls):
-        pass
+    def save_data(cls, data):
+        user = db.session.query(cls).filter_by(username=data['username'], phone=data['phone']).first()
 
+        if user:
+            return None
+        else:
+            user = cls(username=data['username'], password=data['password'], phone=data['phone'])
+            db.session.add(user)
+            db.session.commit()
+            return user
 
 class PostType(db.Model, Base):
     __tablename__ = 'post_type'
@@ -38,8 +49,8 @@ class Post(db.Model, Base):
     type_id = db.Column(db.Integer, db.ForeignKey('post_type.id'), nullable=False)
 
     # 给这个 post 模型添加一个 poster 属性（关系表），User为要连接的表，backref为定义反向引用
-    poster = db.relationship('User', backref=db.backref('posts'), lazy='dynamic')  # lazy表示禁止自动查询
-    type = db.relationship('PostType', backref=db.backref('posts'), lazy='dynamic')
+    poster = db.relationship('User', backref=db.backref('posts'), lazy='select')
+    type = db.relationship('PostType', backref=db.backref('posts'), lazy='select')
 
 
 class PostComment(db.Model, Base):
@@ -52,7 +63,7 @@ class PostComment(db.Model, Base):
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     commenter_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    commenter = db.relationship('User', backref=db.backref('comments'), lazy='dynamic')
+    commenter = db.relationship('User', backref=db.backref('comments'), lazy='select')
 
 
 class CommentReply(db.Model, Base):
