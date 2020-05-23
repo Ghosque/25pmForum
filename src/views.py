@@ -13,8 +13,6 @@ from .settings import BaseConfig
 from .code import ResponseCode, ResponseMessage
 from .response import ResMsg
 
-cache = Redis.get_cache()
-
 
 @api.resource('/user/', '/user/<string:user_id>/')
 class UserView(Resource):
@@ -27,7 +25,7 @@ class UserView(Resource):
             print(user.username)
             print(user.posts)
 
-        return jsonify({'msg': 'select user - {}'.format(user_id)})
+        return {'msg': 'select user - {}'.format(user_id)}
 
     def post(self):
         type = request.args.get('type')
@@ -38,7 +36,7 @@ class UserView(Resource):
             self.handle_login(request.form, res)
         else:
             res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseCode.INVALID_PARAMETER)
-            return jsonify(res.data)
+            return res.data
 
     @staticmethod
     def handle_register(data, res):
@@ -50,7 +48,7 @@ class UserView(Resource):
         if not user:
             res.update(code=ResponseCode.FAIL, msg=ResponseMessage.FAIL)
 
-        return jsonify(res.data)
+        return res.data
 
     @classmethod
     def handle_login(cls, data, res):
@@ -66,10 +64,10 @@ class UserView(Resource):
                 'exp': datetime.utcnow()+timedelta(seconds=BaseConfig.REDIS_DEFAULT_EXPIRE)
             }
             token = jwt.encode(payload, key=BaseConfig.SECRET_KEY, algorithm='HS256').decode('ascii')
-            cache.set(cls.USER_CACHE_KEY_MODEL.format(user.id), token)
+            Redis.write(cls.USER_CACHE_KEY_MODEL.format(user.id), token)
 
             res.update(data={'token': token})
         else:
             res.update(code=ResponseCode.ACCOUNT_OR_PASS_WORD_ERR, msg=ResponseMessage.ACCOUNT_OR_PASS_WORD_ERR)
 
-        return jsonify(res.data)
+        return res.data
