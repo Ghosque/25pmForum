@@ -3,13 +3,15 @@ import jwt
 import hashlib
 from datetime import datetime, timedelta
 
-from flask import request, jsonify, make_response
+from flask import request, jsonify
 from flask_restful import Resource
 
 from .urls import api
 from .utils import Redis
 from .models import User
 from .settings import BaseConfig
+from .code import ResponseCode, ResponseMessage
+from .response import ResMsg
 
 cache = Redis.get_cache()
 
@@ -24,49 +26,34 @@ class UserView(Resource):
         if user:
             print(user.username)
             print(user.posts)
-        response = make_response(jsonify({'msg': 'select user - {}'.format(user_id)}), 200)
-        return response
+
+        return jsonify({'msg': 'select user - {}'.format(user_id)})
 
     def post(self):
         type = request.args.get('type')
+        res = ResMsg()
         if type == 'register':
-            self.handle_register(request.form)
+            self.handle_register(request.form, res)
         elif type == 'login':
-            self.handle_login(request.form)
+            self.handle_login(request.form, res)
         else:
-            res = {
-                'code': 1,
-                'msg': '请求不是注册或登录'
-            }
-            status = 404
-            response = make_response(jsonify(res), status)
-            return response
+            res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseCode.INVALID_PARAMETER)
+            return jsonify(res.data)
 
     @staticmethod
-    def handle_register(data):
+    def handle_register(data, res):
         password = hashlib.md5(data['password'].encode('utf-8')).hexdigest()
         data = dict(data)
         data['password'] = password
         # 保存数据
         user = User.save_data(data)
-        if user:
-            res = {
-                'code': 0,
-                'msg': '注册成功'
-            }
-            status = 200
-        else:
-            res = {
-                'code': 1,
-                'msg': '该用户名或手机号已被注册'
-            }
-            status = 200
+        if not user:
+            res.update(code=ResponseCode.FAIL, msg=ResponseMessage.FAIL)
 
-        response = make_response(jsonify(res), status)
-        return response
+        return jsonify(res.data)
 
     @classmethod
-    def handle_login(cls, data):
+    def handle_login(cls, data, res):
         password = hashlib.md5(data['password'].encode('utf-8')).hexdigest()
         data = dict(data)
         data['password'] = password
@@ -81,18 +68,8 @@ class UserView(Resource):
             token = jwt.encode(payload, key=BaseConfig.SECRET_KEY, algorithm='HS256').decode('ascii')
             cache.set(cls.USER_CACHE_KEY_MODEL.format(user.id), token)
 
-            res = {
-                'code': 0,
-                'msg': '登录成功',
-                'token': token
-            }
-            status = 200
+            res.update(data={'token': token})
         else:
-            res = {
-                'code': 1,
-                'msg': '用户名或密码错误'
-            }
-            status = 200
+            res.update(code=ResponseCode.ACCOUNT_OR_PASS_WORD_ERR, msg=ResponseMessage.ACCOUNT_OR_PASS_WORD_ERR)
 
-        response = make_response(jsonify(res), status)
-        return response
+        return jsonify(res.data)
