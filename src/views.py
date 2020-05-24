@@ -20,6 +20,14 @@ class UserView(Resource):
 
     def get(self, user_id):
         token = request.headers.get('Authorization', None)
+        try:
+            payload = jwt.decode(token, key=BaseConfig.SECRET_KEY, algorithm='HS256')
+            print(payload)
+        except jwt.exceptions.ExpiredSignatureError:
+            cache_token = Redis.read(self.USER_CACHE_KEY_MODEL.format(user_id))
+            if cache_token:
+                pass
+
         user = User.get_user(user_id)
         if user:
             print(user.username)
@@ -61,7 +69,7 @@ class UserView(Resource):
             # 保存JWT
             payload = {
                 "user_id": user.id,
-                'exp': datetime.utcnow()+timedelta(seconds=BaseConfig.REDIS_DEFAULT_EXPIRE)
+                'exp': datetime.utcnow()+timedelta(seconds=BaseConfig.TOKEN_EXPIRE)
             }
             token = jwt.encode(payload, key=BaseConfig.SECRET_KEY, algorithm='HS256').decode('ascii')
             Redis.write(cls.USER_CACHE_KEY_MODEL.format(user.id), token)

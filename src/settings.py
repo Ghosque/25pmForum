@@ -18,6 +18,8 @@ class BaseConfig:
     REDIS_DB = '6'
     REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
     REDIS_DEFAULT_EXPIRE = 7 * 24 * 60 * 60
+    # token
+    TOKEN_EXPIRE = 2 * 60 * 60
 
 
 class DevelopConfig(BaseConfig):
