@@ -1,6 +1,13 @@
 # -*- coding:utf-8 -*-
+import jwt
 import redis
+from functools import wraps
+from datetime import datetime, timedelta
+from flask import request
+
 from .settings import BaseConfig
+from .response import ResMsg
+from .code import ResponseCode, ResponseMessage
 
 
 class Redis(object):
@@ -94,3 +101,40 @@ class Redis(object):
             expire_in_seconds = BaseConfig.REDIS_DEFAULT_EXPIRE
             r = cls.get_cache()
             r.expire(name, expire_in_seconds)
+
+
+def auth_process(view_func):
+    @wraps(view_func)
+    def verify_token(*args, **kwargs):
+        # 在请求头上拿到token
+        token = request.headers.get('Authorization', None)
+        if not token:
+            return ResMsg(code=ResponseCode.TOKEN_ERR, msg=ResponseMessage.TOKEN_ERR).data
+
+        try:
+            payload = jwt.decode(token, key=BaseConfig.SECRET_KEY, algorithm='HS256')
+        except jwt.exceptions.ExpiredSignatureError:  # token过期
+            cache_token = Redis.read(BaseConfig.USER_CACHE_KEY_MODEL.format(request.base_url.rsplit('/', 2)[-2]))
+            if cache_token:
+                new_token = create_token(request.base_url.rsplit('/', 2)[-2])
+                print('new:', new_token)
+                return view_func(*args, **kwargs, token=new_token)
+            else:
+                return ResMsg(code=ResponseCode.TOKEN_ERR, msg=ResponseMessage.TOKEN_ERR).data
+        except jwt.exceptions.InvalidSignatureError:  # token无效
+            return ResMsg(code=ResponseCode.TOKEN_ERR, msg=ResponseMessage.TOKEN_ERR).data
+        else:
+            return view_func(*args, **kwargs, token=token)
+
+    return verify_token
+
+
+def create_token(user_id):
+    payload = {
+        "user_id": user_id,
+        'exp': datetime.utcnow() + timedelta(seconds=BaseConfig.TOKEN_EXPIRE)
+    }
+    token = jwt.encode(payload, key=BaseConfig.SECRET_KEY, algorithm='HS256').decode('ascii')
+    Redis.write(BaseConfig.USER_CACHE_KEY_MODEL.format(user_id), token)
+
+    return token

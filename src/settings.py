@@ -3,7 +3,7 @@ import os
 
 
 class BaseConfig:
-    SECRET_KEY = 'ashdoihsf819y3hr893h43'
+    SECRET_KEY = 'ashdo*i$hsf819y@3hr893h43'
     # MySQL
     HOST = 'localhost'
     PORT = '3306'
@@ -20,6 +20,7 @@ class BaseConfig:
     REDIS_DEFAULT_EXPIRE = 7 * 24 * 60 * 60
     # token
     TOKEN_EXPIRE = 2 * 60 * 60
+    USER_CACHE_KEY_MODEL = 'user:token:{}'
 
 
 class DevelopConfig(BaseConfig):

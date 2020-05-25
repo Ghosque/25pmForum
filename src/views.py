@@ -7,7 +7,7 @@ from flask import request, jsonify
 from flask_restful import Resource
 
 from .urls import api
-from .utils import Redis
+from .utils import Redis, create_token, auth_process
 from .models import User
 from .settings import BaseConfig
 from .code import ResponseCode, ResponseMessage
@@ -18,22 +18,22 @@ from .response import ResMsg
 class UserView(Resource):
     USER_CACHE_KEY_MODEL = 'user:token:{}'
 
-    def get(self, user_id):
-        token = request.headers.get('Authorization', None)
-        try:
-            payload = jwt.decode(token, key=BaseConfig.SECRET_KEY, algorithm='HS256')
-            print(payload)
-        except jwt.exceptions.ExpiredSignatureError:
-            cache_token = Redis.read(self.USER_CACHE_KEY_MODEL.format(user_id))
-            if cache_token:
-                pass
-
+    @auth_process
+    def get(self, user_id, token=None):
+        res = ResMsg()
         user = User.get_user(user_id)
         if user:
-            print(user.username)
-            print(user.posts)
+            data = {
+                'id': user.id,
+                'username': user.username,
+                'password': user.password,
+                'phone': user.phone,
+                'avatar': user.avatar,
+                'token': token
+            }
+            res.update(data=data)
 
-        return {'msg': 'select user - {}'.format(user_id)}
+        return res.data
 
     def post(self):
         type = request.args.get('type')
@@ -67,12 +67,7 @@ class UserView(Resource):
         user = User.verify_data(data)
         if user:
             # 保存JWT
-            payload = {
-                "user_id": user.id,
-                'exp': datetime.utcnow()+timedelta(seconds=BaseConfig.TOKEN_EXPIRE)
-            }
-            token = jwt.encode(payload, key=BaseConfig.SECRET_KEY, algorithm='HS256').decode('ascii')
-            Redis.write(cls.USER_CACHE_KEY_MODEL.format(user.id), token)
+            token = create_token(user.id)
 
             res.update(data={'token': token})
         else:
