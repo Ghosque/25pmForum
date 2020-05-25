@@ -115,7 +115,7 @@ def auth_process(view_func):
             payload = jwt.decode(token, key=BaseConfig.SECRET_KEY, algorithm='HS256')
         except jwt.exceptions.ExpiredSignatureError:  # token过期
             cache_token = Redis.read(BaseConfig.USER_CACHE_KEY_MODEL.format(request.base_url.rsplit('/', 2)[-2]))
-            if cache_token:
+            if cache_token and cache_token==token:
                 new_token = create_token(request.base_url.rsplit('/', 2)[-2])
                 print('new:', new_token)
                 return view_func(*args, **kwargs, token=new_token)
