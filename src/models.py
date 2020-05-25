@@ -44,34 +44,56 @@ class User(db.Model, Base):
         return user
 
 
-class PostType(db.Model, Base):
-    __tablename__ = 'post_type'
+class ArticleParentType(db.Model, Base):
+    __tablename__ = 'article_parent_type'
     id = db.Column(db.Integer, primary_key=True)
     type_name = db.Column(db.String(50), nullable=False)
 
+    @classmethod
+    def save_data(cls, data):
+        print(1)
+        article_type = cls(type_name=data['typeName'])
+        db.session.add(article_type)
+        db.session.commit()
 
-class Post(db.Model, Base):
-    __tablename__ = 'post'
+
+class ArticleChildType(db.Model, Base):
+    __tablename__ = 'article_child_type'
+    id = db.Column(db.Integer, primary_key=True)
+    type_name = db.Column(db.String(50), nullable=False)
+
+    parent_type_id = db.Column(db.Integer, db.ForeignKey('article_parent_type.id'), nullable=False)
+    parent_type = db.relationship('ArticleParentType', backref=db.backref('childrenTypes'), lazy='select')
+
+    @classmethod
+    def save_data(cls, data):
+        article_type = cls(type_name=data['typeName'], parent_type_id=data['parentId'])
+        db.session.add(article_type)
+        db.session.commit()
+
+
+class Article(db.Model, Base):
+    __tablename__ = 'article'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(150), nullable=False)
     content = db.Column(db.Text, nullable=False)
 
-    poster_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    type_id = db.Column(db.Integer, db.ForeignKey('post_type.id'), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    type_id = db.Column(db.Integer, db.ForeignKey('article_child_type.id'), nullable=False)
 
     # 给这个 post 模型添加一个 poster 属性（关系表），User为要连接的表，backref为定义反向引用
-    poster = db.relationship('User', backref=db.backref('posts'), lazy='select')
-    type = db.relationship('PostType', backref=db.backref('posts'), lazy='select')
+    author = db.relationship('User', backref=db.backref('articles'), lazy='select')
+    type = db.relationship('ArticleChildType', backref=db.backref('articles'), lazy='select')
 
 
-class PostComment(db.Model, Base):
-    __tablename__ = 'post_comment'
+class ArticleComment(db.Model, Base):
+    __tablename__ = 'article_comment'
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
     floor = db.Column(db.Integer, nullable=False)
     isDelete = db.Column(db.Boolean, default=False, nullable=False)
 
-    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+    article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
     commenter_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     commenter = db.relationship('User', backref=db.backref('comments'), lazy='select')
@@ -83,6 +105,6 @@ class CommentReply(db.Model, Base):
     content = db.Column(db.Text, nullable=False)
     reply_to_floor = db.Column(db.Boolean, nullable=False)  # 判断是直接评论还是楼中楼
 
-    comment_id = db.Column(db.Integer, db.ForeignKey('post_comment.id'), nullable=False)
+    comment_id = db.Column(db.Integer, db.ForeignKey('article_comment.id'), nullable=False)
     from_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     to_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)

@@ -1,15 +1,12 @@
 # -*- coding:utf-8 -*-
-import jwt
 import hashlib
-from datetime import datetime, timedelta
 
-from flask import request, jsonify
+from flask import request
 from flask_restful import Resource
 
 from .urls import api
-from .utils import Redis, create_token, auth_process
-from .models import User
-from .settings import BaseConfig
+from .utils import create_token, auth_process
+from .models import User, ArticleParentType, ArticleChildType
 from .code import ResponseCode, ResponseMessage
 from .response import ResMsg
 
@@ -20,6 +17,12 @@ class UserView(Resource):
 
     @auth_process
     def get(self, user_id, token=None):
+        """
+        获取个人信息
+        :param user_id:
+        :param token:
+        :return:
+        """
         res = ResMsg()
         user = User.get_user(user_id)
         if user:
@@ -36,6 +39,10 @@ class UserView(Resource):
         return res.data
 
     def post(self):
+        """
+        注册与登录接口
+        :return:
+        """
         type = request.args.get('type')
         res = ResMsg()
         if type == 'register':
@@ -74,3 +81,39 @@ class UserView(Resource):
             res.update(code=ResponseCode.ACCOUNT_OR_PASS_WORD_ERR, msg=ResponseMessage.ACCOUNT_OR_PASS_WORD_ERR)
 
         return res.data
+
+
+@api.resource('/postType/')
+class ArticleTypeView(Resource):
+
+    def post(self):
+        """
+        添加新的文章类型
+        :return:
+        """
+        res = ResMsg()
+        data = request.form
+        print(data['isChild'], type(data['isChild']))
+        if not int(data['isChild']):
+            ArticleParentType.save_data(data)
+        else:
+            ArticleChildType.save_data(data)
+
+        return res.data
+
+
+@api.resource('/post/', '/post/<string:post_id>/')
+class ArticleView(Resource):
+
+    def get(self, post_id):
+        pass
+
+    def post(self):
+        """
+        上传文章
+        :return:
+        """
+        data = request.form
+
+    def put(self):
+        pass
