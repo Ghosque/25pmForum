@@ -22,7 +22,6 @@ class User(db.Model, Base):
     @classmethod
     def get_user(cls, user_id):
         user = cls.query.filter_by(id=user_id).first()
-
         return user
 
     @classmethod
@@ -40,7 +39,6 @@ class User(db.Model, Base):
     @classmethod
     def verify_data(cls, data):
         user = cls.query.filter_by(username=data['username'], password=data['password']).first()
-
         return user
 
 
@@ -85,6 +83,22 @@ class Article(db.Model, Base):
     author = db.relationship('User', backref=db.backref('articles'), lazy='select')
     type = db.relationship('ArticleChildType', backref=db.backref('articles'), lazy='select')
 
+    @classmethod
+    def save_data(cls, data):
+        article = cls(title=data['title'], content=data['content'], author_id=data['authorId'], type_id=data['typeId'])
+        db.session.add(article)
+        db.session.commit()
+
+    @classmethod
+    def get_single_data(cls, articleId):
+        article = cls.query.filter_by(id=articleId).first()
+        return article
+
+    @classmethod
+    def get_all_data(cls, user_id):
+        articles = cls.query.filter_by(author_id=user_id).all()
+        return articles
+
 
 class ArticleComment(db.Model, Base):
     __tablename__ = 'article_comment'
@@ -96,6 +110,7 @@ class ArticleComment(db.Model, Base):
     article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
     commenter_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
+    article = db.relationship('Article', backref=db.backref('comments'), lazy='select')
     commenter = db.relationship('User', backref=db.backref('comments'), lazy='select')
 
 

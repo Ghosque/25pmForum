@@ -6,7 +6,7 @@ from flask_restful import Resource
 
 from .urls import api
 from .utils import create_token, auth_process
-from .models import User, ArticleParentType, ArticleChildType
+from .models import User, ArticleParentType, ArticleChildType, Article
 from .code import ResponseCode, ResponseMessage
 from .response import ResMsg
 
@@ -102,18 +102,48 @@ class ArticleTypeView(Resource):
         return res.data
 
 
-@api.resource('/post/', '/post/<string:post_id>/')
+@api.resource('/post/', '/post/<string:id>/')
 class ArticleView(Resource):
 
-    def get(self, post_id):
-        pass
+    def get(self, id):
+        res = ResMsg()
+        type = request.args.get('type')
+        if type == 'single':
+            article = Article.get_single_data(id)
+            data = {
+                'id': article.id,
+                'title': article.title,
+                'content': article.content,
+                'author': article.author.username,
+                'type': article.type.type_name
+            }
+            res.update(data=data)
+        elif type == 'all':
+            articles = Article.get_all_data(id)
+            data = list()
+            for article in articles:
+                data.append({
+                    'id': article.id,
+                    'title': article.title,
+                    'content': article.content,
+                    'author': article.author.username,
+                    'type': article.type.type_name
+                })
+            res.update(data=data)
+        else:
+            res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
+
+        return res.data
 
     def post(self):
         """
         上传文章
         :return:
         """
-        data = request.form
+        res = ResMsg()
+        Article.save_data(request.form)
+
+        return res.data
 
     def put(self):
         pass
