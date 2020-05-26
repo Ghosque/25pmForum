@@ -127,6 +127,7 @@ class PostComment(db.Model, Base):
             comments_data[index] = {
                 'content': comment.content,
                 'commenter': comment.commenter.username,
+                'commenterGrade': comment.commenter.grade,
                 'ct': datetime_to_string(comment.create_time),
                 'children': []
             }
