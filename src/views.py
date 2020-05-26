@@ -83,7 +83,7 @@ class UserView(Resource):
         return res.data
 
 
-@api.resource('/postType/')
+@api.resource('/articleType/')
 class ArticleTypeView(Resource):
 
     def post(self):
@@ -102,7 +102,7 @@ class ArticleTypeView(Resource):
         return res.data
 
 
-@api.resource('/post/', '/post/<string:id>/')
+@api.resource('/articles/', '/article/<string:id>/')
 class ArticleView(Resource):
 
     def get(self, id):

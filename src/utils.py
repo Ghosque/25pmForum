@@ -117,7 +117,6 @@ def auth_process(view_func):
             cache_token = Redis.read(BaseConfig.USER_CACHE_KEY_MODEL.format(request.base_url.rsplit('/', 2)[-2]))
             if cache_token and cache_token==token:
                 new_token = create_token(request.base_url.rsplit('/', 2)[-2])
-                print('new:', new_token)
                 return view_func(*args, **kwargs, token=new_token)
             else:
                 return ResMsg(code=ResponseCode.TOKEN_ERR, msg=ResponseMessage.TOKEN_ERR).data

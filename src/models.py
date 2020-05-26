@@ -49,7 +49,6 @@ class ArticleParentType(db.Model, Base):
 
     @classmethod
     def save_data(cls, data):
-        print(1)
         article_type = cls(type_name=data['typeName'])
         db.session.add(article_type)
         db.session.commit()
@@ -123,3 +122,5 @@ class CommentReply(db.Model, Base):
     comment_id = db.Column(db.Integer, db.ForeignKey('article_comment.id'), nullable=False)
     from_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     to_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+
+    ori_comment = db.relationship('ArticleComment', backref=db.backref('replies'), lazy='select')
