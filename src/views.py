@@ -6,7 +6,7 @@ from flask_restful import Resource
 
 from .urls import api
 from .utils import create_token, auth_process
-from .models import User, ArticleParentType, ArticleChildType, Article
+from .models import User, PostParentType, PostChildType, Post
 from .code import ResponseCode, ResponseMessage
 from .response import ResMsg
 
@@ -46,9 +46,9 @@ class UserView(Resource):
         type = request.args.get('type')
         res = ResMsg()
         if type == 'register':
-            self.handle_register(request.form, res)
+            return self.handle_register(request.form, res)
         elif type == 'login':
-            self.handle_login(request.form, res)
+            return self.handle_login(request.form, res)
         else:
             res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseCode.INVALID_PARAMETER)
             return res.data
@@ -75,6 +75,7 @@ class UserView(Resource):
         if user:
             # 保存JWT
             token = create_token(user.id)
+            print(token)
 
             res.update(data={'token': token})
         else:
@@ -83,8 +84,8 @@ class UserView(Resource):
         return res.data
 
 
-@api.resource('/articleType/')
-class ArticleTypeView(Resource):
+@api.resource('/postType/')
+class PostTypeView(Resource):
 
     def post(self):
         """
@@ -95,39 +96,39 @@ class ArticleTypeView(Resource):
         data = request.form
         print(data['isChild'], type(data['isChild']))
         if not int(data['isChild']):
-            ArticleParentType.save_data(data)
+            PostParentType.save_data(data)
         else:
-            ArticleChildType.save_data(data)
+            PostChildType.save_data(data)
 
         return res.data
 
 
-@api.resource('/articles/', '/article/<string:id>/')
-class ArticleView(Resource):
+@api.resource('/posts/', '/post/<string:id>/')
+class PostView(Resource):
 
     def get(self, id):
         res = ResMsg()
         type = request.args.get('type')
         if type == 'single':
-            article = Article.get_single_data(id)
+            post = Post.get_single_data(id)
             data = {
-                'id': article.id,
-                'title': article.title,
-                'content': article.content,
-                'author': article.author.username,
-                'type': article.type.type_name
+                'id': post.id,
+                'title': post.title,
+                'content': post.content,
+                'author': post.author.username,
+                'type': post.type.type_name
             }
             res.update(data=data)
         elif type == 'all':
-            articles = Article.get_all_data(id)
+            posts = Post.get_all_data(id)
             data = list()
-            for article in articles:
+            for post in posts:
                 data.append({
-                    'id': article.id,
-                    'title': article.title,
-                    'content': article.content,
-                    'author': article.author.username,
-                    'type': article.type.type_name
+                    'id': post.id,
+                    'title': post.title,
+                    'content': post.content,
+                    'author': post.author.username,
+                    'type': post.type.type_name
                 })
             res.update(data=data)
         else:
@@ -141,7 +142,7 @@ class ArticleView(Resource):
         :return:
         """
         res = ResMsg()
-        Article.save_data(request.form)
+        Post.save_data(request.form)
 
         return res.data
 
