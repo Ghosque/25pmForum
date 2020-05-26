@@ -113,17 +113,19 @@ def auth_process(view_func):
 
         try:
             payload = jwt.decode(token, key=BaseConfig.SECRET_KEY, algorithm='HS256')
+            if payload['user_id'] != int(request.form['userId']):
+                return ResMsg(code=ResponseCode.TOKEN_ERR, msg=ResponseMessage.TOKEN_ERR).data
         except jwt.exceptions.ExpiredSignatureError:  # token过期
-            cache_token = Redis.read(BaseConfig.USER_CACHE_KEY_MODEL.format(request.base_url.rsplit('/', 2)[-2]))
+            cache_token = Redis.read(BaseConfig.USER_CACHE_KEY_MODEL.format(request.args.get('userId', None, int)))
             if cache_token and cache_token==token:
-                new_token = create_token(request.base_url.rsplit('/', 2)[-2])
-                return view_func(*args, **kwargs, token=new_token)
+                new_token = create_token(request.form['userId'])
+                return view_func(*args, **kwargs, id=request.form['userId'], token=new_token)
             else:
                 return ResMsg(code=ResponseCode.TOKEN_ERR, msg=ResponseMessage.TOKEN_ERR).data
         except jwt.exceptions.InvalidSignatureError:  # token无效
             return ResMsg(code=ResponseCode.TOKEN_ERR, msg=ResponseMessage.TOKEN_ERR).data
         else:
-            return view_func(*args, **kwargs, token=token)
+            return view_func(*args, **kwargs, id=request.form['userId'], token=token)
 
     return verify_token
 
@@ -137,3 +139,7 @@ def create_token(user_id):
     Redis.write(BaseConfig.USER_CACHE_KEY_MODEL.format(user_id), token)
 
     return token
+
+
+def datetime_to_string(time):
+    return time.strftime('%Y-%m-%d %H:%M:%S')

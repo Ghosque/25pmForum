@@ -5,8 +5,8 @@ from flask import request
 from flask_restful import Resource
 
 from .urls import api
-from .utils import create_token, auth_process
-from .models import User, PostParentType, PostChildType, Post
+from .utils import create_token, auth_process, datetime_to_string
+from .models import User, PostParentType, PostChildType, Post, PostComment, CommentReply
 from .code import ResponseCode, ResponseMessage
 from .response import ResMsg
 
@@ -16,7 +16,7 @@ class UserView(Resource):
     USER_CACHE_KEY_MODEL = 'user:token:{}'
 
     @auth_process
-    def get(self, user_id, token=None):
+    def get(self, user_id, id=None, token=None):
         """
         获取个人信息
         :param user_id:
@@ -68,6 +68,7 @@ class UserView(Resource):
     @classmethod
     def handle_login(cls, data, res):
         password = hashlib.md5(data['password'].encode('utf-8')).hexdigest()
+        print(password)
         data = dict(data)
         data['password'] = password
         # 检查数据
@@ -94,7 +95,6 @@ class PostTypeView(Resource):
         """
         res = ResMsg()
         data = request.form
-        print(data['isChild'], type(data['isChild']))
         if not int(data['isChild']):
             PostParentType.save_data(data)
         else:
@@ -116,7 +116,9 @@ class PostView(Resource):
                 'title': post.title,
                 'content': post.content,
                 'author': post.author.username,
-                'type': post.type.type_name
+                'type': post.type.type_name,
+                'ct': datetime_to_string(post.create_time),
+                'ut': datetime_to_string(post.update_time)
             }
             res.update(data=data)
         elif type == 'all':
@@ -128,7 +130,9 @@ class PostView(Resource):
                     'title': post.title,
                     'content': post.content,
                     'author': post.author.username,
-                    'type': post.type.type_name
+                    'type': post.type.type_name,
+                    'ct': datetime_to_string(post.create_time),
+                    'ut': datetime_to_string(post.update_time)
                 })
             res.update(data=data)
         else:
@@ -146,5 +150,43 @@ class PostView(Resource):
 
         return res.data
 
-    def put(self):
-        pass
+
+@api.resource('/comments/', '/comments/<string:id>/')
+class CommentView(Resource):
+
+    def get(self, id):
+        @auth_process
+        def get_user_comment():
+            pass
+
+        res = ResMsg()
+        type = request.args.get('type')
+        if type == 'post':
+            comments_data = PostComment.get_data(id)
+            res.update(data=comments_data)
+        elif type == 'user':
+            pass
+        else:
+            res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
+
+        return res.data
+
+    @auth_process
+    def post(self, id=None, token=None):
+        """
+        发表评论或楼中楼回复
+        :return:
+        """
+        res = ResMsg()
+        type = request.args.get('type')
+        if type == 'comment':
+            PostComment.save_data(request.form)
+        elif type == 'reply':
+            CommentReply.save_data(request.form)
+        else:
+            res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
+
+        if token:
+            res.update({'token': token})
+
+        return res.data

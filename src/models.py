@@ -2,6 +2,7 @@
 import datetime
 
 from src import db
+from .utils import datetime_to_string
 
 
 class Base(object):
@@ -18,6 +19,7 @@ class User(db.Model, Base):
     password = db.Column(db.String(50), nullable=False)
     phone = db.Column(db.String(20), unique=True, nullable=False)
     avatar = db.Column(db.String(255), nullable=True)
+    grade = db.Column(db.Integer, default=1, nullable=False)
 
     @classmethod
     def get_user(cls, user_id):
@@ -103,7 +105,6 @@ class PostComment(db.Model, Base):
     __tablename__ = 'post_comment'
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
-    floor = db.Column(db.Integer, nullable=False)
     isDelete = db.Column(db.Boolean, default=False, nullable=False)
 
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
@@ -111,6 +112,35 @@ class PostComment(db.Model, Base):
 
     post = db.relationship('Post', backref=db.backref('comments'), lazy='select')
     commenter = db.relationship('User', backref=db.backref('comments'), lazy='select')
+
+    @classmethod
+    def save_data(cls, data):
+        comment = cls(content=data['content'], post_id=data['postId'], commenter_id=data['userId'])
+        db.session.add(comment)
+        db.session.commit()
+
+    @classmethod
+    def get_data(cls, post_id):
+        comments = cls.query.filter_by(post_id=post_id).all()
+        comments_data = dict()
+        for index, comment in enumerate(comments):
+            comments_data[index] = {
+                'content': comment.content,
+                'commenter': comment.commenter.username,
+                'ct': datetime_to_string(comment.create_time),
+                'children': []
+            }
+            for reply in comment.replies:
+                temp_dict = {
+                    'content': reply.content,
+                    'replyToFloor': reply.reply_to_floor,
+                    'fromUser': reply.from_user.username,
+                    'toUser': reply.to_user.username,
+                    'ct': datetime_to_string(reply.create_time)
+                }
+                comments_data[index]['children'].append(temp_dict)
+
+        return comments_data
 
 
 class CommentReply(db.Model, Base):
@@ -124,5 +154,11 @@ class CommentReply(db.Model, Base):
     to_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
     ori_comment = db.relationship('PostComment', backref=db.backref('replies'), lazy='select')
+    from_user = db.relationship('User', foreign_keys=from_user_id, backref=db.backref('from_replies'), lazy='select')
+    to_user = db.relationship('User', foreign_keys=to_user_id, backref=db.backref('to_replies'), lazy='select')
 
-
+    @classmethod
+    def save_data(cls, data):
+        reply = cls(content=data['content'], reply_to_floor=eval(data['replyToFloor']), comment_id=data['commentId'], from_user_id=data['userId'], to_user_id=data['toUserId'])
+        db.session.add(reply)
+        db.session.commit()
