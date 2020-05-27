@@ -41,6 +41,34 @@ class Redis(object):
         return value.decode('utf-8') if value else value
 
     @classmethod
+    def sadd(cls, name, value):
+        r = cls.get_cache()
+        r.sadd(name, value)
+
+    @classmethod
+    def scard(cls, name):
+        r = cls.get_cache()
+        count = r.scard(name)
+        return count
+
+    @classmethod
+    def srem(cls, name, value):
+        r = cls.get_cache()
+        r.srem(name, value)
+
+    @classmethod
+    def smembers(cls, name):
+        r = cls.get_cache()
+        members = r.smembers(name)
+        return members
+
+    @classmethod
+    def sinter(cls, name1, name2):
+        r = cls.get_cache()
+        set = r.sinter(name1, name2)
+        return set
+
+    @classmethod
     def hset(cls, name, key, value):
         """
         写入hash表
@@ -108,15 +136,17 @@ def auth_process(view_func):
     def verify_token(*args, **kwargs):
         # 在请求头上拿到token
         token = request.headers.get('Authorization', None)
+        print('===', token)
         if not token:
             return ResMsg(code=ResponseCode.TOKEN_ERR, msg=ResponseMessage.TOKEN_ERR).data
 
         try:
             payload = jwt.decode(token, key=BaseConfig.SECRET_KEY, algorithm='HS256')
+            print('===', payload)
             if payload['user_id'] != int(request.form['userId']):
                 return ResMsg(code=ResponseCode.TOKEN_ERR, msg=ResponseMessage.TOKEN_ERR).data
         except jwt.exceptions.ExpiredSignatureError:  # token过期
-            cache_token = Redis.read(BaseConfig.USER_CACHE_KEY_MODEL.format(request.args.get('userId', None, int)))
+            cache_token = Redis.read(BaseConfig.USER_CACHE_KEY_MODEL.format(request.form['userId']))
             if cache_token and cache_token==token:
                 new_token = create_token(request.form['userId'])
                 return view_func(*args, **kwargs, id=request.form['userId'], token=new_token)

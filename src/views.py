@@ -5,7 +5,7 @@ from flask import request
 from flask_restful import Resource
 
 from .urls import api
-from .utils import create_token, auth_process, datetime_to_string
+from .utils import Redis, create_token, auth_process, datetime_to_string
 from .models import User, PostParentType, PostChildType, Post, PostComment, CommentReply
 from .code import ResponseCode, ResponseMessage
 from .response import ResMsg
@@ -185,6 +185,59 @@ class CommentView(Resource):
             CommentReply.save_data(request.form)
         else:
             res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
+
+        if token:
+            res.update({'token': token})
+
+        return res.data
+
+
+@api.resource('/userFollow/', '/userFollow/<string:user_id>/')
+class UserFollowView(Resource):
+    USER_FOLLOW_CACHE_KEY_MODEL = 'user:follow:{}'
+    USER_FANS_CACHE_KEY_MODEL = 'user:fans:{}'
+
+    def get(self, user_id):
+        res = ResMsg()
+        type = request.args.get('type')
+        if type == 'count':
+            follow_num = Redis.scard(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id))
+            fans_num = Redis.scard(self.USER_FANS_CACHE_KEY_MODEL.format(user_id))
+            res.update(data={'followNum': follow_num, 'fansNum': fans_num})
+        elif type == 'commonCount':
+            set = Redis.sinter(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id), self.USER_FOLLOW_CACHE_KEY_MODEL.format(request.form['otherId']))
+            print(set)
+            count = len(set)
+            res.update(data={'commonCount': count})
+        elif type == 'list':
+            pass
+        elif type == 'commonList':
+            pass
+        else:
+            res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
+
+        return res.data
+
+    @auth_process
+    def post(self, id=None, token=None):
+        res = ResMsg()
+        user_id = id
+        followed_user_id = request.form['followedId']
+        Redis.sadd(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id), followed_user_id)
+        Redis.sadd(self.USER_FANS_CACHE_KEY_MODEL.format(followed_user_id), user_id)
+
+        if token:
+            res.update({'token': token})
+
+        return res.data
+
+    @auth_process
+    def delete(self, id=None, token=None):
+        res = ResMsg()
+        user_id = id
+        cancel_followed_user_id = request.form['cancelFollowedId']
+        Redis.srem(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id), cancel_followed_user_id)
+        Redis.srem(self.USER_FANS_CACHE_KEY_MODEL.format(cancel_followed_user_id), user_id)
 
         if token:
             res.update({'token': token})
