@@ -60,13 +60,19 @@ class Redis(object):
     def smembers(cls, name):
         r = cls.get_cache()
         members = r.smembers(name)
-        return members
+        return list(item.decode('utf-8') for item in members)
 
     @classmethod
     def sinter(cls, name1, name2):
         r = cls.get_cache()
-        set = r.sinter(name1, name2)
-        return set
+        sset = r.sinter(name1, name2)
+        return list(item.decode('utf-8') for item in sset)
+
+    @classmethod
+    def sismember(cls, name, value):
+        r = cls.get_cache()
+        flag = r.sismember(name, value)
+        return flag
 
     @classmethod
     def hset(cls, name, key, value):
@@ -136,13 +142,11 @@ def auth_process(view_func):
     def verify_token(*args, **kwargs):
         # 在请求头上拿到token
         token = request.headers.get('Authorization', None)
-        print('===', token)
         if not token:
             return ResMsg(code=ResponseCode.TOKEN_ERR, msg=ResponseMessage.TOKEN_ERR).data
 
         try:
             payload = jwt.decode(token, key=BaseConfig.SECRET_KEY, algorithm='HS256')
-            print('===', payload)
             if payload['user_id'] != int(request.form['userId']):
                 return ResMsg(code=ResponseCode.TOKEN_ERR, msg=ResponseMessage.TOKEN_ERR).data
         except jwt.exceptions.ExpiredSignatureError:  # token过期

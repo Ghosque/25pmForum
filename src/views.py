@@ -205,14 +205,16 @@ class UserFollowView(Resource):
             fans_num = Redis.scard(self.USER_FANS_CACHE_KEY_MODEL.format(user_id))
             res.update(data={'followNum': follow_num, 'fansNum': fans_num})
         elif type == 'commonCount':
-            set = Redis.sinter(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id), self.USER_FOLLOW_CACHE_KEY_MODEL.format(request.form['otherId']))
-            print(set)
-            count = len(set)
+            common_list = Redis.sinter(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id), self.USER_FOLLOW_CACHE_KEY_MODEL.format(request.form['otherId']))
+            count = len(common_list)
             res.update(data={'commonCount': count})
         elif type == 'list':
-            pass
+            follow_list = Redis.smembers(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id))
+            fans_list = Redis.smembers(self.USER_FANS_CACHE_KEY_MODEL.format(user_id))
+            res.update(data={'followList': follow_list, 'fansList': fans_list})
         elif type == 'commonList':
-            pass
+            common_list = Redis.sinter(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id), self.USER_FOLLOW_CACHE_KEY_MODEL.format(request.form['otherId']))
+            res.update(data={'commonList': common_list})
         else:
             res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
 
@@ -222,9 +224,17 @@ class UserFollowView(Resource):
     def post(self, id=None, token=None):
         res = ResMsg()
         user_id = id
-        followed_user_id = request.form['followedId']
-        Redis.sadd(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id), followed_user_id)
-        Redis.sadd(self.USER_FANS_CACHE_KEY_MODEL.format(followed_user_id), user_id)
+        type = request.args.get('type')
+        if type == 'new':
+            followed_user_id = request.form['followedId']
+            Redis.sadd(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id), followed_user_id)
+            Redis.sadd(self.USER_FANS_CACHE_KEY_MODEL.format(followed_user_id), user_id)
+        elif type == 'judge':
+            other_user_id = request.form['otherId']
+            flag = Redis.sismember(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id), other_user_id) and Redis.sismember(self.USER_FANS_CACHE_KEY_MODEL.format(user_id), other_user_id)
+            res.update(data={'flag': flag})
+        else:
+            res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
 
         if token:
             res.update({'token': token})
