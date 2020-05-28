@@ -196,6 +196,26 @@ class CommentView(Resource):
 class UserFollowView(Resource):
     USER_FOLLOW_CACHE_KEY_MODEL = 'user:follow:{}'
     USER_FANS_CACHE_KEY_MODEL = 'user:fans:{}'
+    @auth_process
+    def get_follow_fans_list(self, id=None, token=None):
+        res = ResMsg()
+        follow_list = Redis.smembers(self.USER_FOLLOW_CACHE_KEY_MODEL.format(id))
+        fans_list = Redis.smembers(self.USER_FANS_CACHE_KEY_MODEL.format(id))
+        for index, follow_item in enumerate(follow_list):
+            user = User.get_user(follow_item)
+            follow_list[index] = {
+                'id': user.id,
+                'username': user.username
+            }
+        for index, fans_item in enumerate(fans_list):
+            user = User.get_user(fans_item)
+            fans_list[index] = {
+                'id': user.id,
+                'username': user.username
+            }
+        res.update(data={'followList': follow_list, 'fansList': fans_list, 'token': token})
+
+        return res.data
 
     def get(self, user_id):
         res = ResMsg()
@@ -209,12 +229,7 @@ class UserFollowView(Resource):
             count = len(common_list)
             res.update(data={'commonCount': count})
         elif type == 'list':
-            follow_list = Redis.smembers(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id))
-            fans_list = Redis.smembers(self.USER_FANS_CACHE_KEY_MODEL.format(user_id))
-            res.update(data={'followList': follow_list, 'fansList': fans_list})
-        elif type == 'commonList':
-            common_list = Redis.sinter(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id), self.USER_FOLLOW_CACHE_KEY_MODEL.format(request.form['otherId']))
-            res.update(data={'commonList': common_list})
+            return self.get_follow_fans_list()
         else:
             res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
 
