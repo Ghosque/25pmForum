@@ -93,12 +93,28 @@ class Post(db.Model, Base):
     @classmethod
     def get_single_data(cls, postId):
         post = cls.query.filter_by(id=postId).first()
-        return post
+        return cls.serialize_data(post)
 
     @classmethod
     def get_single_user_all_data(cls, user_id):
         posts = cls.query.filter_by(author_id=user_id).order_by(cls.update_time.desc()).all()
+        for index, post in enumerate(posts):
+            posts[index] = cls.serialize_data(post)
         return posts
+
+    @staticmethod
+    def serialize_data(data):
+        new_data = {
+            'id': data.id,
+            'title': data.title,
+            'content': data.content,
+            'author': data.author.username,
+            'authorGrade': data.author.grade,
+            'type': data.type.type_name,
+            'ct': datetime_to_string(data.create_time),
+            'ut': datetime_to_string(data.update_time)
+        }
+        return new_data
 
 
 class PostComment(db.Model, Base):

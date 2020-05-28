@@ -113,32 +113,11 @@ class PostView(Resource):
         if type == 'single':
             post = Post.get_single_data(id)
             comments_data = PostComment.get_data(id)
-            data = {
-                'id': post.id,
-                'title': post.title,
-                'content': post.content,
-                'author': post.author.username,
-                'authorGrade': post.author.grade,
-                'type': post.type.type_name,
-                'commentsData': comments_data,
-                'ct': datetime_to_string(post.create_time),
-                'ut': datetime_to_string(post.update_time)
-            }
-            res.update(data=data)
+            post.update({'commentsData': comments_data})
+            res.update(data=post)
         elif type == 'user':
             posts = Post.get_single_user_all_data(id)
-            data = list()
-            for post in posts:
-                data.append({
-                    'id': post.id,
-                    'title': post.title,
-                    'content': post.content,
-                    'author': post.author.username,
-                    'type': post.type.type_name,
-                    'ct': datetime_to_string(post.create_time),
-                    'ut': datetime_to_string(post.update_time)
-                })
-            res.update(data=data)
+            res.update(data={'posts': posts})
         elif type == 'all':
             pass
         else:
