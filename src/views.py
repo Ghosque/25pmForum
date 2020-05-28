@@ -103,26 +103,30 @@ class PostTypeView(Resource):
         return res.data
 
 
-@api.resource('/posts/', '/post/<string:id>/')
+@api.resource('/posts/', '/posts/<string:id>/')
 class PostView(Resource):
 
     def get(self, id):
         res = ResMsg()
         type = request.args.get('type')
+        print(type)
         if type == 'single':
             post = Post.get_single_data(id)
+            comments_data = PostComment.get_data(id)
             data = {
                 'id': post.id,
                 'title': post.title,
                 'content': post.content,
                 'author': post.author.username,
+                'authorGrade': post.author.grade,
                 'type': post.type.type_name,
+                'commentsData': comments_data,
                 'ct': datetime_to_string(post.create_time),
                 'ut': datetime_to_string(post.update_time)
             }
             res.update(data=data)
-        elif type == 'all':
-            posts = Post.get_all_data(id)
+        elif type == 'user':
+            posts = Post.get_single_user_all_data(id)
             data = list()
             for post in posts:
                 data.append({
@@ -135,18 +139,24 @@ class PostView(Resource):
                     'ut': datetime_to_string(post.update_time)
                 })
             res.update(data=data)
+        elif type == 'all':
+            pass
         else:
             res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
 
         return res.data
 
-    def post(self):
+    @auth_process
+    def post(self, id=None, token=None):
         """
         上传文章
         :return:
         """
         res = ResMsg()
         Post.save_data(request.form)
+
+        if token:
+            res.update(data={'token': token})
 
         return res.data
 
@@ -268,3 +278,13 @@ class UserFollowView(Resource):
             res.update({'token': token})
 
         return res.data
+
+
+@api.resource('/articleLike/', '/articleLike/<string:article_id>/')
+class ArticleLikeView(Resource):
+
+    def get(self, article_id):
+        pass
+
+    def post(self):
+        pass

@@ -86,7 +86,7 @@ class Post(db.Model, Base):
 
     @classmethod
     def save_data(cls, data):
-        post = cls(title=data['title'], content=data['content'], author_id=data['authorId'], type_id=data['typeId'])
+        post = cls(title=data['title'], content=data['content'], author_id=data['userId'], type_id=data['typeId'])
         db.session.add(post)
         db.session.commit()
 
@@ -96,8 +96,8 @@ class Post(db.Model, Base):
         return post
 
     @classmethod
-    def get_all_data(cls, user_id):
-        posts = cls.query.filter_by(author_id=user_id).all()
+    def get_single_user_all_data(cls, user_id):
+        posts = cls.query.filter_by(author_id=user_id).order_by(cls.update_time.desc()).all()
         return posts
 
 
