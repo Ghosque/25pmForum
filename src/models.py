@@ -105,8 +105,8 @@ class Post(db.Model, Base):
         return posts
 
     @classmethod
-    def get_all_data(cls, page):
-        posts = cls.query.order_by(cls.update_time.desc()).offset(BaseConfig.POST_PER_NUM*(page-1)).limit(BaseConfig.POST_PER_NUM).all()
+    def get_all_data(cls, page, type_id):
+        posts = cls.query.filter_by(type_id=type_id).order_by(cls.update_time.desc()).offset(BaseConfig.POST_PER_NUM*(page-1)).limit(BaseConfig.POST_PER_NUM).all()
         for index, post in enumerate(posts):
             posts[index] = cls.serialize_data(post)
         return posts

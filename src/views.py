@@ -119,11 +119,13 @@ class PostView(Resource):
             res.update(data={'posts': posts})
         elif type == 'all':
             page = request.args.get('page', 1, int)
-            posts = Post.get_all_data(page)
-            if posts:
-                res.update(data={'posts': posts})
-            else:
+            type_id = request.args.get('typeId', None)
+            if not type_id:
                 res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
+
+            posts = Post.get_all_data(page, type_id)
+
+            res.update(data={'posts': posts})
         else:
             res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
 
@@ -209,7 +211,14 @@ class UserFollowView(Resource):
                 'id': user.id,
                 'username': user.username
             }
-        res.update(data={'followList': follow_list, 'fansList': fans_list, 'token': token})
+        data = {
+            'followList': follow_list,
+            'fansList': fans_list
+        }
+        if token:
+            data.update({'token': token})
+
+        res.update(data=data)
 
         return res.data
 
