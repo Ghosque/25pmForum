@@ -111,9 +111,12 @@ class PostView(Resource):
         type = request.args.get('type')
         if type == 'single':
             post = Post.get_single_data(id)
-            comments_data = PostComment.get_data(id)
-            post.update({'commentsData': comments_data})
-            res.update(data=post)
+            if not post:
+                res.update(code=ResponseCode.NO_RESOURCE_FOUND, msg=ResponseMessage.NO_RESOURCE_FOUND)
+            else:
+                comments_data = PostComment.get_data(id)
+                post.update({'commentsData': comments_data})
+                res.update(data=post)
         elif type == 'user':
             posts = Post.get_single_user_all_data(id)
             res.update(data={'posts': posts})

@@ -49,6 +49,7 @@ class PostParentType(db.Model, Base):
     __tablename__ = 'post_parent_type'
     id = db.Column(db.Integer, primary_key=True)
     type_name = db.Column(db.String(50), nullable=False)
+    is_delete = db.Column(db.Boolean, default=False, nullable=False)
 
     @classmethod
     def save_data(cls, data):
@@ -61,6 +62,7 @@ class PostChildType(db.Model, Base):
     __tablename__ = 'post_child_type'
     id = db.Column(db.Integer, primary_key=True)
     type_name = db.Column(db.String(50), nullable=False)
+    is_delete = db.Column(db.Boolean, default=False, nullable=False)
 
     parent_type_id = db.Column(db.Integer, db.ForeignKey('post_parent_type.id'), nullable=False)
     parent_type = db.relationship('PostParentType', backref=db.backref('childrenTypes'), lazy='select')
@@ -79,6 +81,7 @@ class Post(db.Model, Base):
     content = db.Column(db.Text, nullable=False)
     reply_num = db.Column(db.Integer, default=0, nullable=False)
     is_brilliant = db.Column(db.Boolean, default=False, nullable=False)
+    is_delete = db.Column(db.Boolean, default=False, nullable=False)
 
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     type_id = db.Column(db.Integer, db.ForeignKey('post_child_type.id'), nullable=False)
@@ -95,19 +98,19 @@ class Post(db.Model, Base):
 
     @classmethod
     def get_single_data(cls, postId):
-        post = cls.query.filter_by(id=postId).first()
+        post = cls.query.filter_by(id=postId, is_delete=False).first()
         return cls.serialize_data(post)
 
     @classmethod
     def get_single_user_all_data(cls, user_id):
-        posts = cls.query.filter_by(author_id=user_id).order_by(cls.create_time.desc()).all()
+        posts = cls.query.filter_by(author_id=user_id, is_delete=False).order_by(cls.create_time.desc()).all()
         for index, post in enumerate(posts):
             posts[index] = cls.serialize_data(post)
         return posts
 
     @classmethod
     def get_all_data(cls, page, type_id):
-        posts = cls.query.filter_by(type_id=type_id).order_by(cls.update_time.desc()).offset(BaseConfig.POST_PER_NUM*(page-1)).limit(BaseConfig.POST_PER_NUM).all()
+        posts = cls.query.filter_by(type_id=type_id, is_delete=False).order_by(cls.update_time.desc()).offset(BaseConfig.POST_PER_NUM*(page-1)).limit(BaseConfig.POST_PER_NUM).all()
         for index, post in enumerate(posts):
             posts[index] = cls.serialize_data(post)
         return posts
@@ -133,7 +136,7 @@ class PostComment(db.Model, Base):
     __tablename__ = 'post_comment'
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
-    isDelete = db.Column(db.Boolean, default=False, nullable=False)
+    is_delete = db.Column(db.Boolean, default=False, nullable=False)
 
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     commenter_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -144,7 +147,7 @@ class PostComment(db.Model, Base):
     @classmethod
     def save_data(cls, data):
         comment = cls(content=data['content'], post_id=data['postId'], commenter_id=data['userId'])
-        post = Post.query.filter(Post.id==data['postId']).first()
+        post = Post.query.filter(Post.id==data['postId'], cls.is_delete==False).first()
         post.reply_num += 1
 
         db.session.add(comment)
@@ -180,6 +183,7 @@ class CommentReply(db.Model, Base):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
     reply_to_floor = db.Column(db.Boolean, nullable=False)  # 判断是直接评论还是楼中楼
+    is_delete = db.Column(db.Boolean, default=False, nullable=False)
 
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     comment_id = db.Column(db.Integer, db.ForeignKey('post_comment.id'), nullable=False)
@@ -194,7 +198,7 @@ class CommentReply(db.Model, Base):
     @classmethod
     def save_data(cls, data):
         reply = cls(content=data['content'], reply_to_floor=eval(data['replyToFloor']), post_id=data['postId'], comment_id=data['commentId'], from_user_id=data['userId'], to_user_id=data['toUserId'])
-        post = Post.query.filter(Post.id==data['postId']).first()
+        post = Post.query.filter(Post.id==data['postId'], cls.is_delete==False).first()
         post.reply_num += 1
 
         db.session.add(reply)
