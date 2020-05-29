@@ -106,10 +106,9 @@ class PostTypeView(Resource):
 @api.resource('/posts/', '/posts/<string:id>/')
 class PostView(Resource):
 
-    def get(self, id):
+    def get(self, id=None):
         res = ResMsg()
         type = request.args.get('type')
-        print(type)
         if type == 'single':
             post = Post.get_single_data(id)
             comments_data = PostComment.get_data(id)
@@ -119,7 +118,12 @@ class PostView(Resource):
             posts = Post.get_single_user_all_data(id)
             res.update(data={'posts': posts})
         elif type == 'all':
-            pass
+            page = request.args.get('page', 1, int)
+            posts = Post.get_all_data(page)
+            if posts:
+                res.update(data={'posts': posts})
+            else:
+                res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
         else:
             res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
 
@@ -138,6 +142,9 @@ class PostView(Resource):
             res.update(data={'token': token})
 
         return res.data
+
+    def put(self):
+        pass
 
 
 @api.resource('/comments/', '/comments/<string:id>/')

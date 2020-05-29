@@ -21,6 +21,8 @@ class BaseConfig:
     # token
     TOKEN_EXPIRE = 2 * 60 * 60
     USER_CACHE_KEY_MODEL = 'user:token:{}'
+    # 每次获取N个帖子
+    POST_PER_NUM = 50
 
 
 class DevelopConfig(BaseConfig):

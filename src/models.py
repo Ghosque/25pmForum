@@ -3,6 +3,7 @@ import datetime
 
 from src import db
 from .utils import datetime_to_string
+from .settings import BaseConfig
 
 
 class Base(object):
@@ -76,6 +77,7 @@ class Post(db.Model, Base):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(150), nullable=False)
     content = db.Column(db.Text, nullable=False)
+    reply_num = db.Column(db.Integer, default=0, nullable=False)
 
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     type_id = db.Column(db.Integer, db.ForeignKey('post_child_type.id'), nullable=False)
@@ -97,7 +99,14 @@ class Post(db.Model, Base):
 
     @classmethod
     def get_single_user_all_data(cls, user_id):
-        posts = cls.query.filter_by(author_id=user_id).order_by(cls.update_time.desc()).all()
+        posts = cls.query.filter_by(author_id=user_id).order_by(cls.create_time.desc()).all()
+        for index, post in enumerate(posts):
+            posts[index] = cls.serialize_data(post)
+        return posts
+
+    @classmethod
+    def get_all_data(cls, page):
+        posts = cls.query.order_by(cls.update_time.desc()).offset(BaseConfig.POST_PER_NUM*(page-1)).limit(BaseConfig.POST_PER_NUM).all()
         for index, post in enumerate(posts):
             posts[index] = cls.serialize_data(post)
         return posts
@@ -132,6 +141,9 @@ class PostComment(db.Model, Base):
     @classmethod
     def save_data(cls, data):
         comment = cls(content=data['content'], post_id=data['postId'], commenter_id=data['userId'])
+        post = Post.query.filter(Post.id==data['postId']).first()
+        post.reply_num += 1
+
         db.session.add(comment)
         db.session.commit()
 
@@ -166,16 +178,21 @@ class CommentReply(db.Model, Base):
     content = db.Column(db.Text, nullable=False)
     reply_to_floor = db.Column(db.Boolean, nullable=False)  # 判断是直接评论还是楼中楼
 
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     comment_id = db.Column(db.Integer, db.ForeignKey('post_comment.id'), nullable=False)
     from_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     to_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
-    ori_comment = db.relationship('PostComment', backref=db.backref('replies'), lazy='select')
+    post = db.relationship('Post', foreign_keys=post_id, backref=db.backref('replies'), lazy='select')
+    ori_comment = db.relationship('PostComment', foreign_keys=comment_id, backref=db.backref('replies'), lazy='select')
     from_user = db.relationship('User', foreign_keys=from_user_id, backref=db.backref('from_replies'), lazy='select')
     to_user = db.relationship('User', foreign_keys=to_user_id, backref=db.backref('to_replies'), lazy='select')
 
     @classmethod
     def save_data(cls, data):
-        reply = cls(content=data['content'], reply_to_floor=eval(data['replyToFloor']), comment_id=data['commentId'], from_user_id=data['userId'], to_user_id=data['toUserId'])
+        reply = cls(content=data['content'], reply_to_floor=eval(data['replyToFloor']), post_id=data['postId'], comment_id=data['commentId'], from_user_id=data['userId'], to_user_id=data['toUserId'])
+        post = Post.query.filter(Post.id==data['postId']).first()
+        post.reply_num += 1
+
         db.session.add(reply)
         db.session.commit()
