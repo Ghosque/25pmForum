@@ -275,8 +275,8 @@ class UserFollowView(Resource):
         return res.data
 
 
-@api.resource('/articleLike/', '/articleLike/<string:article_id>/')
-class ArticleLikeView(Resource):
+@api.resource('/postLike/', '/postLike/<string:post_id>/')
+class PostLikeView(Resource):
 
     def get(self, article_id):
         pass

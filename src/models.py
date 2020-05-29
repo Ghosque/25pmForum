@@ -78,6 +78,7 @@ class Post(db.Model, Base):
     title = db.Column(db.String(150), nullable=False)
     content = db.Column(db.Text, nullable=False)
     reply_num = db.Column(db.Integer, default=0, nullable=False)
+    is_brilliant = db.Column(db.Boolean, default=False, nullable=False)
 
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     type_id = db.Column(db.Integer, db.ForeignKey('post_child_type.id'), nullable=False)
@@ -117,6 +118,8 @@ class Post(db.Model, Base):
             'id': data.id,
             'title': data.title,
             'content': data.content,
+            'replyNum': data.reply_num,
+            'isBrilliant': data.is_brilliant,
             'author': data.author.username,
             'authorGrade': data.author.grade,
             'type': data.type.type_name,
