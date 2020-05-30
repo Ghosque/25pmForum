@@ -158,24 +158,54 @@ class PostComment(db.Model, Base):
         comments = cls.query.filter_by(post_id=post_id).all()
         comments_data = dict()
         for index, comment in enumerate(comments):
+            if comment.is_delete:
+                continue
             comments_data[index] = {
+                'id': comment.id,
+                'floor': index+2,
                 'content': comment.content,
+                'commenterId': comment.commenter.id,
                 'commenter': comment.commenter.username,
                 'commenterGrade': comment.commenter.grade,
                 'ct': datetime_to_string(comment.create_time),
                 'children': []
             }
             for reply in comment.replies:
+                if reply.is_delete:
+                    continue
                 temp_dict = {
+                    'id': reply.id,
                     'content': reply.content,
                     'replyToFloor': reply.reply_to_floor,
+                    'isDelete': reply.is_delete,
+                    'fromUserId': reply.from_user.id,
                     'fromUser': reply.from_user.username,
+                    'toUserId': reply.to_user.id,
                     'toUser': reply.to_user.username,
                     'ct': datetime_to_string(reply.create_time)
                 }
                 comments_data[index]['children'].append(temp_dict)
 
         return comments_data
+
+    @classmethod
+    def delete_data(cls, comment_id, user_id):
+        comment = cls.query.filter_by(id=comment_id, commenter_id=user_id).first()
+        if not comment:
+            return 0
+        comment.is_delete = True
+
+        replies = CommentReply.query.filter(CommentReply.comment_id==comment_id).all()
+        for item in replies:
+            item.is_delete = True
+
+        delete_num = len(replies) + 1
+        post = comment.post
+        post.reply_num -= delete_num
+
+        db.session.commit()
+
+        return 1
 
 
 class CommentReply(db.Model, Base):
@@ -203,3 +233,18 @@ class CommentReply(db.Model, Base):
 
         db.session.add(reply)
         db.session.commit()
+
+    @classmethod
+    def delete_data(cls, reply_id, user_id):
+        reply = cls.query.filter_by(id=reply_id, from_user_id=user_id).first()
+        if not reply:
+            return 0
+
+        reply.is_delete = True
+        post = reply.post
+        post.reply_num -= 1
+
+        db.session.commit()
+
+        return 1
+

@@ -192,6 +192,30 @@ class CommentView(Resource):
 
         return res.data
 
+    @auth_process
+    def delete(self, id=None, token=None):
+        res = ResMsg()
+        type = request.args.get('type')
+        comment_id = request.form['commentId']
+        if type == 'comment':
+            flag = PostComment.delete_data(comment_id, id)
+            if not flag:
+                res.update(code=ResponseCode.NO_RESOURCE_FOUND, msg=ResponseMessage.NO_RESOURCE_FOUND)
+            else:
+                if token:
+                    res.update(data={'token': token})
+        elif type == 'reply':
+            flag = CommentReply.delete_data(comment_id, id)
+            if not flag:
+                res.update(code=ResponseCode.NO_RESOURCE_FOUND, msg=ResponseMessage.NO_RESOURCE_FOUND)
+            else:
+                if token:
+                    res.update(data={'token': token})
+        else:
+            res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
+
+        return res.data
+
 
 @api.resource('/userFollow/', '/userFollow/<string:user_id>/')
 class UserFollowView(Resource):
