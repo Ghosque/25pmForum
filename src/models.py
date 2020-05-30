@@ -177,7 +177,6 @@ class PostComment(db.Model, Base):
                     'id': reply.id,
                     'content': reply.content,
                     'replyToFloor': reply.reply_to_floor,
-                    'isDelete': reply.is_delete,
                     'fromUserId': reply.from_user.id,
                     'fromUser': reply.from_user.username,
                     'toUserId': reply.to_user.id,
