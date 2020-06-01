@@ -300,13 +300,3 @@ class UserFollowView(Resource):
             res.update({'token': token})
 
         return res.data
-
-
-@api.resource('/postLike/', '/postLike/<string:post_id>/')
-class PostLikeView(Resource):
-
-    def get(self, article_id):
-        pass
-
-    def post(self):
-        pass
