@@ -5,7 +5,7 @@ from flask import request
 from flask_restful import Resource
 
 from .urls import api
-from .utils import Redis, create_token, auth_process, datetime_to_string
+from .utils import Redis, create_token, auth_process
 from .models import User, PostParentType, PostChildType, Post, PostComment, CommentReply
 from .code import ResponseCode, ResponseMessage
 from .response import ResMsg
