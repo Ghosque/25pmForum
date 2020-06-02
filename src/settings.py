@@ -6,7 +6,7 @@ class BaseConfig:
     SECRET_KEY = 'ashdo*i$hsf819y@3hr893h43'
     # MySQL
     HOST = 'localhost'
-    PORT = '3306'
+    PORT = '3366'
     DATABASE = 'forum'
     USERNAME = 'root'
     PASSWORD = os.environ.get('MYSQL_PASSWORD')
