@@ -23,6 +23,9 @@ class BaseConfig:
     USER_CACHE_KEY_MODEL = 'user:token:{}'
     # 每次获取N个帖子
     POST_PER_NUM = 50
+    # CACHE
+    CACHE_TYPE = 'simple'
+    CACHE_DEFAULT_TIMEOUT = 300
 
 
 class DevelopConfig(BaseConfig):

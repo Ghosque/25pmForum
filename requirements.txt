@@ -6,3 +6,4 @@ pymysql==0.9.3
 flask-script==2.0.6
 redis==3.5.1
 PyJWT==1.7.1
+Flask-Caching==1.8.0

@@ -4,6 +4,7 @@ import hashlib
 from flask import request
 from flask_restful import Resource
 
+from src import cache
 from .urls import api
 from .utils import Redis, create_token, auth_process
 from .models import User, PostParentType, PostChildType, Post, PostComment, CommentReply
@@ -106,6 +107,7 @@ class PostTypeView(Resource):
 @api.resource('/posts/', '/posts/<string:id>/')
 class PostView(Resource):
 
+    @cache.cached()
     def get(self, id=None):
         res = ResMsg()
         type = request.args.get('type')
