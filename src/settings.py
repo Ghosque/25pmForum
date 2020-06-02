@@ -14,7 +14,7 @@ class BaseConfig:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # Redis
     REDIS_HOST = 'localhost'
-    REDIS_PORT = '6379'
+    REDIS_PORT = '6699'
     REDIS_DB = '6'
     REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
     REDIS_DEFAULT_EXPIRE = 7 * 24 * 60 * 60
