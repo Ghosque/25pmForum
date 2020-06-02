@@ -164,7 +164,7 @@ class PostComment(db.Model, Base):
                 'id': comment.id,
                 'floor': index+2,
                 'content': comment.content,
-                'commenterId': comment.commenter.id,
+                'commenterId': comment.commenter_id,
                 'commenter': comment.commenter.username,
                 'commenterGrade': comment.commenter.grade,
                 'ct': datetime_to_string(comment.create_time),
@@ -205,6 +205,21 @@ class PostComment(db.Model, Base):
         db.session.commit()
 
         return 1
+
+    @classmethod
+    def get_user_data(cls, user_id):
+        comments = cls.query.filter_by(commenter_id=user_id, is_delete=False).order_by(cls.create_time.desc()).all()
+        for index, comment in enumerate(comments):
+            comments[index] = {
+                'id': comment.id,
+                'type': 'comment',
+                'content': comment.content,
+                'postId': comment.post_id,
+                'post': comment.post.title,
+                'ct': datetime_to_string(comment.create_time),
+            }
+
+        return comments
 
 
 class CommentReply(db.Model, Base):
@@ -247,3 +262,22 @@ class CommentReply(db.Model, Base):
 
         return 1
 
+    @classmethod
+    def get_user_data(cls, user_id):
+        replies = cls.query.filter_by(from_user_id=user_id, is_delete=False).order_by(cls.create_time.desc()).all()
+        for index, reply in enumerate(replies):
+            replies[index] = {
+                'id': reply.id,
+                'type': 'reply',
+                'content': reply.content,
+                'replyToFloor': reply.reply_to_floor,
+                'post_id': reply.post_id,
+                'post': reply.post.title,
+                'fromUserId': reply.from_user.id,
+                'fromUser': reply.from_user.username,
+                'toUserId': reply.to_user.id,
+                'toUser': reply.to_user.username,
+                'ct': datetime_to_string(reply.create_time)
+            }
+
+        return replies

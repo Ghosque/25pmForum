@@ -159,16 +159,25 @@ class CommentView(Resource):
 
     def get(self, id):
         @auth_process
-        def get_user_comment():
-            pass
+        def get_user_comment(id=None, token=None):
+            comments = PostComment.get_user_data(id)
+            replies = CommentReply.get_user_data(id)
+            user_comments = sorted(comments+replies, key=lambda x:x['ct'], reverse=True)
+
+            return user_comments, token
 
         res = ResMsg()
         type = request.args.get('type')
         if type == 'post':
             comments_data = PostComment.get_data(id)
-            res.update(data=comments_data)
+            data = {'commentsData': comments_data}
+            res.update(data=data)
         elif type == 'user':
-            pass
+            comments_data, token = get_user_comment()
+            data = {'commentsData': comments_data}
+            if token:
+                data.update({'token': token})
+            res.update(data=data)
         else:
             res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
 
