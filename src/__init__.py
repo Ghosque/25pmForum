@@ -6,6 +6,7 @@ from werkzeug.utils import import_string
 
 from .settings import config
 from .core import JSONEncoder
+from .logs.logs import setup_log
 
 db = SQLAlchemy()
 cache = Cache()
@@ -13,6 +14,7 @@ blueprints = ['src.urls:api_bp']
 
 
 def create_app(config_name):
+    setup_log(config_name)
     app = Flask(__name__)
     app.config.from_object(config[config_name])
     app.json_encoder = JSONEncoder  # 设置返回值编码格式

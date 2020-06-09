@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 import os
+import logging
 
 
 class BaseConfig:
@@ -18,14 +19,16 @@ class BaseConfig:
     REDIS_DB = '6'
     REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
     REDIS_DEFAULT_EXPIRE = 7 * 24 * 60 * 60
-    # token
+    # Token
     TOKEN_EXPIRE = 2 * 60 * 60
     USER_CACHE_KEY_MODEL = 'user:token:{}'
     # 每次获取N个帖子
     POST_PER_NUM = 50
-    # CACHE
+    # Cache
     CACHE_TYPE = 'simple'
     CACHE_DEFAULT_TIMEOUT = 300
+    # Log
+    LOG_LEVEL = logging.DEBUG
 
 
 class DevelopConfig(BaseConfig):
@@ -33,11 +36,13 @@ class DevelopConfig(BaseConfig):
 
 
 class TestConfig(BaseConfig):
+    DEBUG = True
     TESTING = True
 
 
 class ProductConfig(BaseConfig):
-    pass
+    DEBUG = False
+    LOG_LEVEL = logging.WARNING
 
 
 config = {

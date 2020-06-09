@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 import hashlib
+import logging
 
 from flask import request
 from flask_restful import Resource
@@ -69,15 +70,14 @@ class UserView(Resource):
     @classmethod
     def handle_login(cls, data, res):
         password = hashlib.md5(data['password'].encode('utf-8')).hexdigest()
-        print(password)
         data = dict(data)
         data['password'] = password
+        logging.debug("测试日志，登录")
         # 检查数据
         user = User.verify_data(data)
         if user:
             # 保存JWT
             token = create_token(user.id)
-            print(token)
 
             res.update(data={'token': token})
         else:
