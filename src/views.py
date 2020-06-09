@@ -25,6 +25,7 @@ class UserView(Resource):
         :param token:
         :return:
         """
+        logging.debug("用户id=【{}】 请求获取个人数据".format(user_id))
         res = ResMsg()
         user = User.get_user(user_id)
         if user:
@@ -52,6 +53,7 @@ class UserView(Resource):
         elif type == 'login':
             return self.handle_login(request.form, res)
         else:
+            logging.debug("User.post接口请求失败，参数type={}不存在".format(type))
             res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseCode.INVALID_PARAMETER)
             return res.data
 
@@ -64,6 +66,8 @@ class UserView(Resource):
         user = User.save_data(data)
         if not user:
             res.update(code=ResponseCode.FAIL, msg=ResponseMessage.FAIL)
+            logging.debug("新用户注册失败，用户名：{}，密码：{}，绑定手机：{}".format(data['username'], data['password'], data['phone']))
+        logging.debug("新用户 {} 注册成功".format(data['username']))
 
         return res.data
 
@@ -72,7 +76,7 @@ class UserView(Resource):
         password = hashlib.md5(data['password'].encode('utf-8')).hexdigest()
         data = dict(data)
         data['password'] = password
-        logging.debug("测试日志，登录")
+        logging.info("用户 {} 登录".format(data['username']))
         # 检查数据
         user = User.verify_data(data)
         if user:
@@ -81,6 +85,7 @@ class UserView(Resource):
 
             res.update(data={'token': token})
         else:
+            logging.debug("账号或密码错误")
             res.update(code=ResponseCode.ACCOUNT_OR_PASS_WORD_ERR, msg=ResponseMessage.ACCOUNT_OR_PASS_WORD_ERR)
 
         return res.data
@@ -91,15 +96,17 @@ class PostTypeView(Resource):
 
     def post(self):
         """
-        添加新的文章类型
+        添加新的帖子类型
         :return:
         """
         res = ResMsg()
         data = request.form
         if not int(data['isChild']):
             PostParentType.save_data(data)
+            logging.info('新增一类帖子类型：【{}】'.format(data['typeName']))
         else:
             PostChildType.save_data(data)
+            logging.info('新增二类帖子类型：【{}】'.format(data['typeName']))
 
         return res.data
 
@@ -112,6 +119,7 @@ class PostView(Resource):
         res = ResMsg()
         type = request.args.get('type')
         if type == 'single':
+            logging.info('获取帖子id=【{}】的详细内容'.format(id))
             post = Post.get_single_data(id)
             if not post:
                 res.update(code=ResponseCode.NO_RESOURCE_FOUND, msg=ResponseMessage.NO_RESOURCE_FOUND)
@@ -120,9 +128,11 @@ class PostView(Resource):
                 post.update({'commentsData': comments_data})
                 res.update(data=post)
         elif type == 'user':
+            logging.info('获取用户id=【{}】的全部帖子'.format(id))
             posts = Post.get_single_user_all_data(id)
             res.update(data={'posts': posts})
         elif type == 'all':
+            logging.info('获取所有帖子')
             page = request.args.get('page', 1, int)
             type_id = request.args.get('typeId', None)
             if not type_id:
@@ -132,6 +142,7 @@ class PostView(Resource):
 
             res.update(data={'posts': posts})
         else:
+            logging.debug('Post.post接口请求失败，参数type={}不存在'.format(type))
             res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
 
         return res.data
@@ -139,7 +150,7 @@ class PostView(Resource):
     @auth_process
     def post(self, id=None, token=None):
         """
-        上传文章
+        新增帖子
         :return:
         """
         res = ResMsg()
@@ -147,6 +158,8 @@ class PostView(Resource):
 
         if token:
             res.update(data={'token': token})
+
+        logging.info('新增帖子，类型：【{}】，用户id：【{}】'.format(request.form['typeId'], request.form['userId']))
 
         return res.data
 
@@ -169,16 +182,19 @@ class CommentView(Resource):
         res = ResMsg()
         type = request.args.get('type')
         if type == 'post':
+            logging.info('获取帖子id=【{}】的所有评论'.format(id))
             comments_data = PostComment.get_data(id)
             data = {'commentsData': comments_data}
             res.update(data=data)
         elif type == 'user':
+            logging.info('获取用户id=【{}】的所有评论'.format(id))
             comments_data, token = get_user_comment()
             data = {'commentsData': comments_data}
             if token:
                 data.update({'token': token})
             res.update(data=data)
         else:
+            logging.debug('Comment.get接口请求失败，参数type={}不存在'.format(type))
             res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
 
         return res.data
@@ -191,11 +207,13 @@ class CommentView(Resource):
         """
         res = ResMsg()
         type = request.args.get('type')
+        logging.info('用户id=【{}】在帖子id=【{}】发表评论，类型为【{}】'.format(request.form['userId'], request.form['postId'], type))
         if type == 'comment':
             PostComment.save_data(request.form)
         elif type == 'reply':
             CommentReply.save_data(request.form)
         else:
+            logging.debug('Comment.post接口请求失败，参数type={}不存在'.format(type))
             res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
 
         if token:
@@ -208,6 +226,7 @@ class CommentView(Resource):
         res = ResMsg()
         type = request.args.get('type')
         comment_id = request.form['commentId']
+        logging.info('用户id=【{}】在帖子id=【{}】删除评论，评论id=【{}】，类型为【{}】'.format(request.form['userId'], request.form['postId'], comment_id, type))
         if type == 'comment':
             flag = PostComment.delete_data(comment_id, id)
             if not flag:
@@ -223,6 +242,7 @@ class CommentView(Resource):
                 if token:
                     res.update(data={'token': token})
         else:
+            logging.debug('Comment.delete接口请求失败，参数type={}不存在'.format(type))
             res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
 
         return res.data
@@ -234,6 +254,7 @@ class UserFollowView(Resource):
     USER_FANS_CACHE_KEY_MODEL = 'user:fans:{}'
     @auth_process
     def get_follow_fans_list(self, id=None, token=None):
+        logging.info('用户id=【{}】获取关注、粉丝列表'.format(id))
         res = ResMsg()
         follow_list = Redis.smembers(self.USER_FOLLOW_CACHE_KEY_MODEL.format(id))
         fans_list = Redis.smembers(self.USER_FANS_CACHE_KEY_MODEL.format(id))
@@ -264,16 +285,19 @@ class UserFollowView(Resource):
         res = ResMsg()
         type = request.args.get('type')
         if type == 'count':
+            logging.info('获取用户id=【{}】关注数和粉丝数'.format(user_id))
             follow_num = Redis.scard(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id))
             fans_num = Redis.scard(self.USER_FANS_CACHE_KEY_MODEL.format(user_id))
             res.update(data={'followNum': follow_num, 'fansNum': fans_num})
         elif type == 'commonCount':
+            logging.info('用户id=【{}】获取与另一用户id=【{}】的共同关注数'.format(user_id, request.form['otherId']))
             common_list = Redis.sinter(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id), self.USER_FOLLOW_CACHE_KEY_MODEL.format(request.form['otherId']))
             count = len(common_list)
             res.update(data={'commonCount': count})
         elif type == 'list':
             return self.get_follow_fans_list()
         else:
+            logging.debug('UserFollow.get接口请求失败，参数type={}不存在'.format(type))
             res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
 
         return res.data
@@ -285,13 +309,16 @@ class UserFollowView(Resource):
         type = request.args.get('type')
         if type == 'new':
             followed_user_id = request.form['followedId']
+            logging.info('用户id=【{}】关注用户id=【{}】'.format(user_id, followed_user_id))
             Redis.sadd(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id), followed_user_id)
             Redis.sadd(self.USER_FANS_CACHE_KEY_MODEL.format(followed_user_id), user_id)
         elif type == 'judge':
             other_user_id = request.form['otherId']
+            logging.info('判断用户id=【{}】和id=【{}】是否互相关注'.format(user_id, other_user_id))
             flag = Redis.sismember(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id), other_user_id) and Redis.sismember(self.USER_FANS_CACHE_KEY_MODEL.format(user_id), other_user_id)
             res.update(data={'flag': flag})
         else:
+            logging.debug('UserFollow.post接口请求失败，参数type={}不存在'.format(type))
             res.update(code=ResponseCode.INVALID_PARAMETER, msg=ResponseMessage.INVALID_PARAMETER)
 
         if token:
@@ -306,6 +333,7 @@ class UserFollowView(Resource):
         cancel_followed_user_id = request.form['cancelFollowedId']
         Redis.srem(self.USER_FOLLOW_CACHE_KEY_MODEL.format(user_id), cancel_followed_user_id)
         Redis.srem(self.USER_FANS_CACHE_KEY_MODEL.format(cancel_followed_user_id), user_id)
+        logging.info('用户id=【{}】取消关注用户id=【{}】'.format(user_id, cancel_followed_user_id))
 
         if token:
             res.update({'token': token})
